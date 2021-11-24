@@ -24,18 +24,18 @@ const makeLens = <s, a>(sa: (s: s) => a) => (sas: (s: s) => (a: a) => s): Lens<s
 }
 const barLens: Lens<foo, [number, number]> = makeLens((foo: foo) => foo.bar)((n: foo) => (x) => Object.assign(n, { bar: x }))
 const _2lens: Lens<[number, number], number> = makeLens((foo: [number, number]) => foo[1])((foo: [number, number]) => (n: number) => [foo[0], n])
-//@ts-ignore
-const view = <s, a>(l: Lens<s, a>) => (s: s): a => l(makeConst)(s).value;//l(makeConst(s))(a).value;
+const view = <s, a>(l: Lens<s, a>) => (s: s) => l((s) => makeConst(s)(s))(s).value;//l(makeConst(s))(a).value;
 const set = <s, a>(l: Lens<s, a>) => (a: a) => (s1: s): s => l(() => makeIdentity(a))(s1).value;//l(() => makeIdentity(s1))(a).value
-const compose = <a, b, c>(f1: (b: b) => c) => (f2: (a: a) => b) => (a: a) => f1(f2(a));
+function compose<T, U, R>(g: (y: U) => R, f: (x: T) => U): (x: T) => R {
+    return x => g(f(x));
+}
 const myFoo: foo = {
     baz: "hi",
     bar: [1, 2]
 }
 function main() {
-    //@ts-ignore
-    const composed: Lens<foo, number> = compose(barLens)(_2lens)
-    const prop: (f: foo) => number = view<foo, number>(composed)
+    const composed: Lens<foo, number> = compose(barLens, _2lens)
+    const prop = view<foo, number>(composed)
     console.log(prop(myFoo))
 }
 main()
