@@ -9,15 +9,15 @@ type foo = {
     bar: [number, number],
     baz: string,
 }
-
-type Lens<s, a> = (f: ((a: a) => functor<a>)) => (s: s) => functor<s>
 const barLens: Lens<foo, [number, number]> = makeLens((foo: foo) => foo.bar)((n: foo) => (x) => Object.assign(n, { bar: x }))
 const _2lens: Lens<[number, number], number> = makeLens((foo: [number, number]) => foo[1])((foo: [number, number]) => (n: number) => [foo[0], n])
 const myFoo: foo = {
     baz: "hi",
     bar: [1, 2]
 }
-const composed: Lens<foo, number> = compose(barLens)(_2lens)
-const prop: (f: foo) => number = view<foo, number>(composed)
-console.log(prop(myFoo))
+const composed: Lens<foo, number> = compose(barLens, _2lens)
+const viewFoo = view<foo, number>(composed)
+const setFoo = set<foo, number>(composed)
+console.log("the 2nd element of the bar field is", viewFoo(myFoo)) // "2"
+console.log("myFoo updated with 100 is", setFoo(100)(myFoo)) // "{ baz: 'hi', bar: [ 1, 100 ] }"
 ```

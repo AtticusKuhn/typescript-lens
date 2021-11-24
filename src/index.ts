@@ -35,7 +35,9 @@ const myFoo: foo = {
 }
 function main() {
     const composed: Lens<foo, number> = compose(barLens, _2lens)
-    const prop = view<foo, number>(composed)
-    console.log(prop(myFoo))
+    const viewFoo = view<foo, number>(composed)
+    const setFoo = set<foo, number>(composed)
+    console.log("the 2nd element of the bar field is", viewFoo(myFoo))
+    console.log("myFoo updated with 100 is", setFoo(100)(myFoo))
 }
 main()
