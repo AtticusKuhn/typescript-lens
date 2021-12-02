@@ -19,8 +19,6 @@ const makeConst = <b>(bthing: b) => (__a: any): functor<b> => ({
 const makeLens = <s, a>(sa: (s: s) => a) => (sas: (s: s) => (a: a) => s): Lens<s, a> => {
     return (afa: ((a: a) => functor<a>)) => (s: s) => afa(sa(s)).fmap(sas(s));
 }
-const barLens: Lens<foo, [number, number]> = makeLens((foo: foo) => foo.bar)((n: foo) => (x) => Object.assign(n, { bar: x }))
-const _2lens: Lens<[number, number], number> = makeLens((foo: [number, number]) => foo[1])((foo: [number, number]) => (n: number) => [foo[0], n])
 const view = <s, a>(l: Lens<s, a>) => (s: s) => l((s) => makeConst(s)(s))(s).value;//l(makeConst(s))(a).value;
 const set = <s, a>(l: Lens<s, a>) => (a: a) => (s1: s): s => l(() => makeIdentity(a))(s1).value;//l(() => makeIdentity(s1))(a).value
 
@@ -31,7 +29,6 @@ type Get<T, Path extends string> = Path extends `${infer K}.${infer R}`
     : Path extends keyof T
     ? T[Path]
     : never;
-type test = Get<foo, "bar.1">
 const createLens = <structure>() => <locationString extends string>(locationString: locationString): Lens<structure, Get<structure, locationString>> => {
     const path = locationString.split(".")
     //@ts-ignore
@@ -54,9 +51,22 @@ const createLens = <structure>() => <locationString extends string>(locationStri
         return a
     })
 }
+type makeLenses<Type> = {
+    [Property in keyof Type]: Lens<Type, Type[Property]>
+};
+const lensMaker = <structure>(): makeLenses<structure> => {
+    const handler = {
+        get: function (_target: any, prop: any, _receiver: any) {
+            //@ts-ignore
+            return makeLens<structure, any>((s: structure) => s[prop])((s: structure) => (a) => Object.assign(s, { [prop]: a }))
+        }
+    };
+    const proxy = new Proxy({}, handler);
+    return proxy
+}
 const fooLensCreator = createLens<foo>()
-const barL = fooLensCreator("bar")
-const L2 = createLens<[number, number]>()("1")
+const { bar, baz } = lensMaker<foo>()
+const lens2 = fooLensCreator("bar.1")
 
 function compose<T, U, R>(g: (y: U) => R, f: (x: T) => U): (x: T) => R {
     return x => g(f(x));
@@ -66,10 +76,11 @@ const myFoo: foo = {
     bar: [1, 2]
 }
 function main() {
-    const composed: Lens<foo, number> = compose(barL, L2)
-    const viewFoo = view<foo, number>(composed)
-    const setFoo = set<foo, number>(composed)
+    const lens: Lens<foo, number> = lens2
+    const viewFoo = view<foo, number>(lens)
+    const setFoo = set<foo, number>(lens)
     console.log("the 2nd element of the bar field is", viewFoo(myFoo))
     console.log("myFoo updated with 100 is", setFoo(100)(myFoo))
+    console.log("the bar is", view(baz)(myFoo))
 }
 main()
